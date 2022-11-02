@@ -21,3 +21,17 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+/.gradle
+/.idea
+Car Sharing/Companies
+Car Sharing/Initialization
+Car Sharing/Relationship
+Car Sharing/Welcome, customer
+Car Sharing/task/build
+**/db/*
+Car Sharing/.DS_Store
+**/.DS_Store
+course-info.yaml
+course-remote-info.yaml
+Topics/*
+Car Sharing/lesson-info.yaml
