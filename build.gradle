@@ -30,9 +30,6 @@ subprojects {
     dependencies {
         implementation group: 'com.h2database', name: 'h2', version: '1.4.200'
         testImplementation 'com.github.hyperskill:hs-test:release-SNAPSHOT'
-
-        compileOnly 'org.projectlombok:lombok:1.18.22'
-        annotationProcessor 'org.projectlombok:lombok:1.18.22'
     }
 
     configurations.all {
