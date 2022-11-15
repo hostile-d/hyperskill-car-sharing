@@ -2,10 +2,10 @@ package carsharing;
 
 public class Main {
     public static void main(String[] args) {
-        var cli = new CLI();
-        var dbManager = new DBManager(cli.getParameter(args));
-        dbManager.init();
-        cli.setDbManager(dbManager);
+        var dbManager = new DBManager(CLI.getParameter(args));
+        dbManager.dropOldDB();
+        dbManager.createDB();
+        var cli = new CLI(dbManager);
         cli.startNavigation();
     }
 }
