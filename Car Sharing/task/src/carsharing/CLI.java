@@ -4,6 +4,7 @@ import org.h2.command.dml.Call;
 
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.function.*;
 
 public class CLI {
     final static String DB_FILE_NAME_ARG = "-databaseFileName";
@@ -104,31 +105,20 @@ public class CLI {
         System.out.println(dbManager.listCompanies().isEmpty() ? "The company list is empty!" : "Choose the company:");
         return null;
     }
-    public Callable printCompanyMenu(String companyName) {
+    public Consumer<String> printCompanyMenu(String companyName) {
         System.out.println(String.format("'%s' company", companyName));
         return null;
     }
     private void createMenu() {
-        menu = new MenuNode();
-        menu.addChild(new MenuNode(1, "Log in as a manager"));
-        menu.addChild(new MenuNode(0, "Exit"));
-
-        menu.getChildren().get(1).addChild(new MenuNode(1, "Company list", this::printCompanyList));
-        menu.getChildren().get(1).addChild(new MenuNode(2, "Create a company", this::createCompany));
-        menu.getChildren().get(1).addChild(new MenuNode(0, "Back"));
-
-        var companyNames = dbManager.listCompanies();
-        for (int i = 0; i < companyNames.size(); i++) {
-            var companyName = companyNames.get(i);
-            var companyMenuNode = new MenuNode(i + 1, companyName, () -> printCompanyMenu(companyName));
-            menu.getChildren().get(1).getChildren().get(1).addChild(companyMenuNode, menu.getChildren().get(1));
-            companyMenuNode.addChild(new MenuNode(1, "Car list", this::printCarsList));
-            companyMenuNode.addChild(new MenuNode(2, "Create a car", this::addCarToCompany));
-            companyMenuNode.addChild(new MenuNode(0, "Back"));
-        }
-        if (companyNames.size() > 0) {
-            menu.getChildren().get(1).getChildren().get(1).addChild(new MenuNode(0, "Back"));
-        }
-        currentMenuNode = menu;
+        var menuRoot = new Menu(
+                dbManager,
+                this::printCompanyList,
+                this::createCompany,
+                this::printCompanyMenu,
+                this::printCarsList,
+                this::addCarToCompany
+        );
+        menu = menuRoot;
+        currentMenuNode = menuRoot;
     }
 }
