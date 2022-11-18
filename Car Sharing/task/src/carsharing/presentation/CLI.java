@@ -1,6 +1,6 @@
-package carsharing;
+package carsharing.presentation;
 
-import org.h2.command.dml.Call;
+import carsharing.persistance.DBManager;
 
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -32,7 +32,7 @@ public class CLI {
             handleMenuChange(Integer.parseInt(nextChoise));
         } catch (NumberFormatException e) {
             System.out.printf(
-                    "Incorrect input, type a number from 0 to %s to continue\n\n",
+                    "Incorrect input, type a number from 0 to %s to continue\n",
                     currentMenuNode.getChildren().size() - 1
             );
             startNavigation();
@@ -67,12 +67,11 @@ public class CLI {
         }
         currentMenuNode.getChildren().forEach((id, node) -> System.out.println(node));
     }
-    public Callable createCompany() {
+    public Callable addCompany() {
         System.out.println("Enter the company name:");
         String name = scanner.nextLine();
-        dbManager.creteCompany(name);
-        System.out.println("The company was created!");
-        System.out.println();
+        dbManager.addCompany(name);
+        System.out.println("The company was created!\n");
         createMenu();
         currentMenuNode = menu.getChildren().get(1);
         return null;
@@ -81,19 +80,28 @@ public class CLI {
         System.out.println("Enter the car name:");
         String carName = scanner.nextLine();
         dbManager.addCarToCompany(currentMenuNode.getName(), carName);
-        System.out.println("The car was added!");
-        System.out.println();
+        System.out.println("The car was added!\n");
         var menuBefore = currentMenuNode;
         createMenu();
         currentMenuNode = menuBefore;
         return null;
     }
+    public Callable addCustomer() {
+        System.out.println("Enter the customer name:");
+        String name = scanner.nextLine();
+        dbManager.addCustomer(name, Optional.empty());
+        System.out.println("The customer was added!\n");
+        createMenu();
+        currentMenuNode = menu;
+        return null;
+    }
+
     public Callable printCarsList() {
         var cars = dbManager.listCompanyCars(currentMenuNode.getName());
         if (cars.isEmpty()) {
             System.out.println("The car list is empty!");
         } else {
-            System.out.println(String.format("'%s' cars:", currentMenuNode.getName()));
+            System.out.printf("'%s' cars:%n", currentMenuNode.getName());
             for (int i = 0; i < cars.size(); i++) {
                 System.out.println((i + 1) + ". " + cars.get(i));
             }
@@ -101,22 +109,32 @@ public class CLI {
         System.out.println();
         return null;
     }
+
     public Callable printCompanyList() {
-        System.out.println(dbManager.listCompanies().isEmpty() ? "The company list is empty!" : "Choose the company:");
+        System.out.println(dbManager.listCompanies().isEmpty() ? "The company list is empty!\n" : "Choose the company:");
         return null;
     }
+
+    public Callable printCustomerList() {
+        System.out.println(dbManager.listCustomers().isEmpty() ? "The customer list is empty!\n" : "Customer list:");
+        return null;
+    }
+
     public Consumer<String> printCompanyMenu(String companyName) {
-        System.out.println(String.format("'%s' company", companyName));
+        System.out.printf("'%s' company%n", companyName);
         return null;
     }
+
     private void createMenu() {
         var menuRoot = new Menu(
                 dbManager,
-                this::printCompanyList,
-                this::createCompany,
                 this::printCompanyMenu,
+                this::printCompanyList,
                 this::printCarsList,
-                this::addCarToCompany
+                this::printCustomerList,
+                this::addCompany,
+                this::addCarToCompany,
+                this::addCustomer
         );
         menu = menuRoot;
         currentMenuNode = menuRoot;

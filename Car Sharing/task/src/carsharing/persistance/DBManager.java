@@ -1,7 +1,8 @@
-package carsharing;
+package carsharing.persistance;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 public class DBManager {
@@ -15,9 +16,9 @@ public class DBManager {
     }
     public void dropOldDB() {
         exceptionHandler(() -> {
-            Class.forName(JDBC_DRIVER);
-            connection = DriverManager.getConnection(DB_URL + dbFileName);
-            connection.setAutoCommit(true);
+            statement = connection.createStatement();
+            statement.execute("DROP TABLE IF EXISTS customer");
+            statement.close();
 
             statement = connection.createStatement();
             statement.execute("DROP TABLE IF EXISTS car");
@@ -27,53 +28,53 @@ public class DBManager {
             statement.execute("DROP TABLE IF EXISTS company");
             statement.close();
 
+
             statement.close();
-            connection.close();
             return null;
         });
     }
     public void createDB() {
         exceptionHandler(() -> {
-            Class.forName(JDBC_DRIVER);
-            connection = DriverManager.getConnection(DB_URL + dbFileName);
-            connection.setAutoCommit(true);
-
-
             statement = connection.createStatement();
-            String createCompanyTable =  "CREATE TABLE  COMPANY (" +
-                    "ID INTEGER NOT NULL AUTO_INCREMENT, " +
-                    " NAME VARCHAR(255) NOT NULL UNIQUE, " +
-                    " PRIMARY KEY ( id )" +
+            String createCompanyTable = "CREATE TABLE company (" +
+                    "id INTEGER NOT NULL AUTO_INCREMENT, " +
+                    " name VARCHAR(255) NOT NULL UNIQUE, " +
+                    " PRIMARY KEY (id)" +
                     ")";
             statement.executeUpdate(createCompanyTable);
-            String createCarTable =  "CREATE TABLE CAR (" +
-                    " ID INTEGER NOT NULL AUTO_INCREMENT, " +
-                    " NAME VARCHAR NOT NULL UNIQUE, " +
-                    " COMPANY_ID INT NOT NULL, " +
+
+            String createCarTable = "CREATE TABLE car (" +
+                    " id INTEGER NOT NULL AUTO_INCREMENT, " +
+                    " name VARCHAR NOT NULL UNIQUE, " +
+                    " company_id INT NOT NULL, " +
                     " CONSTRAINT fk_company FOREIGN KEY (company_id)" +
                     " REFERENCES company(id), " +
-                    " PRIMARY KEY ( id )" +
+                    " PRIMARY KEY (id)" +
                     ")";
             statement.executeUpdate(createCarTable);
 
+            String createCustomerTable = "CREATE TABLE customer (" +
+                    " id INTEGER NOT NULL AUTO_INCREMENT, " +
+                    " name VARCHAR(255) NOT NULL UNIQUE, " +
+                    " rented_car_id INTEGER, " +
+                    " CONSTRAINT fk_car FOREIGN KEY (rented_car_id)" +
+                    " REFERENCES car(id), " +
+                    " PRIMARY KEY (id)" +
+                    ")";
+            statement.executeUpdate(createCustomerTable);
+
             statement.close();
-            connection.close();
             return null;
         });
     }
 
-    public void creteCompany(String name) {
+    public void addCompany(String name) {
         exceptionHandler(() -> {
-            Class.forName(JDBC_DRIVER);
-            connection = DriverManager.getConnection(DB_URL + dbFileName);
-            connection.setAutoCommit(true);
-
             statement = connection.createStatement();
-            String sql =  "INSERT INTO COMPANY (NAME) VALUES ('" + name + "')";
+            String sql =  "INSERT INTO company (NAME) VALUES ('" + name + "')";
             statement.executeUpdate(sql);
 
             statement.close();
-            connection.close();
             return null;
         });
     }
@@ -81,12 +82,8 @@ public class DBManager {
     public ArrayList<String> listCompanies() {
         ArrayList<String> companies = new ArrayList<String>();
         exceptionHandler(() -> {
-            Class.forName(JDBC_DRIVER);
-            connection = DriverManager.getConnection(DB_URL + dbFileName);
-            connection.setAutoCommit(true);
-
             statement = connection.createStatement();
-            String sql =  "SELECT * FROM COMPANY";
+            String sql =  "SELECT * FROM company";
             var result = statement.executeQuery(sql);
 
             while(result.next()) {
@@ -94,7 +91,6 @@ public class DBManager {
             }
 
             statement.close();
-            connection.close();
             return null;
         });
         return companies;
@@ -102,12 +98,8 @@ public class DBManager {
 
     public void addCarToCompany(String companyName, String carName) {
         exceptionHandler(() -> {
-            Class.forName(JDBC_DRIVER);
-            connection = DriverManager.getConnection(DB_URL + dbFileName);
-            connection.setAutoCommit(true);
-
             statement = connection.createStatement();
-            String getId =  "SELECT ID FROM COMPANY WHERE NAME='" + companyName + "'";
+            String getId =  "SELECT id FROM company WHERE name='" + companyName + "'";
             var idResult = statement.executeQuery(getId);
             Integer companyId = null;
             while (idResult.next()) {
@@ -117,24 +109,46 @@ public class DBManager {
 
             if (companyId != null) {
                 statement = connection.createStatement();
-                String addCar = "INSERT INTO CAR (COMPANY_ID, NAME) VALUES ('" + companyId + "','" + carName + "')";
+                String addCar = "INSERT INTO car (company_id, name) VALUES ('" + companyId + "','" + carName + "')";
                 statement.executeUpdate(addCar);
             }
-            connection.close();
             return null;
         });
+    }
+
+    public void addCustomer(String customerName, Optional<Integer> customerCarId) {
+        var carId = customerCarId.isEmpty() ? null : "'" + customerCarId.get() + "'";
+        exceptionHandler(() -> {
+            statement = connection.createStatement();
+            String addCar = "INSERT INTO customer (name, rented_car_id) VALUES ('"+customerName+"', "+carId+")";
+            statement.executeUpdate(addCar);
+            return null;
+        });
+    }
+
+    public ArrayList<String> listCustomers() {
+        ArrayList<String> customers = new ArrayList<String>();
+        exceptionHandler(() -> {
+            statement = connection.createStatement();
+            String sql =  "SELECT * FROM customer";
+            var result = statement.executeQuery(sql);
+
+            while(result.next()) {
+                customers.add(result.getString("name"));
+            }
+
+            statement.close();
+            return null;
+        });
+        return customers;
     }
 
     public ArrayList<String> listCompanyCars(String companyName) {
         ArrayList<String> cars = new ArrayList<String>();
         exceptionHandler(() -> {
             ResultSet carsList = null;
-            Class.forName(JDBC_DRIVER);
-            connection = DriverManager.getConnection(DB_URL + dbFileName);
-            connection.setAutoCommit(true);
-
             statement = connection.createStatement();
-            String getId =  "SELECT ID FROM COMPANY WHERE NAME='" + companyName + "'";
+            String getId =  "SELECT id FROM company WHERE name='" + companyName + "'";
             var idResult = statement.executeQuery(getId);
             Integer companyId = null;
             while (idResult.next()) {
@@ -144,7 +158,7 @@ public class DBManager {
 
             if (companyId != null) {
                 statement = connection.createStatement();
-                String listCars = "SELECT * FROM CAR WHERE COMPANY_ID='" + companyId + "'";
+                String listCars = "SELECT * FROM car WHERE company_id='" + companyId + "'";
                 carsList = statement.executeQuery(listCars);
             }
             if (carsList != null) {
@@ -152,7 +166,6 @@ public class DBManager {
                     cars.add(carsList.getString("name"));
                 }
             }
-            connection.close();
             return null;
         });
         return cars;
@@ -160,7 +173,11 @@ public class DBManager {
 
     public void exceptionHandler(Callable<?> callback) {
         try {
+            Class.forName(JDBC_DRIVER);
+            connection = DriverManager.getConnection(DB_URL + dbFileName);
+            connection.setAutoCommit(true);
             callback.call();
+            connection.close();
         } catch(SQLException se) {
             //Handle errors for JDBC
             se.printStackTrace();

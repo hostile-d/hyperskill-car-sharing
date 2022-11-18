@@ -1,4 +1,4 @@
-package carsharing;
+package carsharing.presentation;
 
 import java.util.LinkedHashMap;
 import java.util.Objects;
