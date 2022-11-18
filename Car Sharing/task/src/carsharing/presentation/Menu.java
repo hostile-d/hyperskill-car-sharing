@@ -1,6 +1,7 @@
 package carsharing.presentation;
 
 import carsharing.persistance.DBManager;
+import org.h2.command.dml.Call;
 
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
@@ -13,6 +14,7 @@ public class Menu extends MenuNode {
             Callable printCompanyList,
             Callable printCarsList,
             Callable printCustomerList,
+            Callable printCustomerCar,
             Callable addCompany,
             Callable addCarToCompany,
             Callable addCustomer
@@ -51,7 +53,7 @@ public class Menu extends MenuNode {
             customerParentNode.addChild(customerMenuNode, this);
             customerMenuNode.addChild(new MenuNode(1, "Rent a car"));
             customerMenuNode.addChild(new MenuNode(2, "Return a rented car"));
-            customerMenuNode.addChild(new MenuNode(3, "My rented car"));
+            customerMenuNode.addChild(new MenuNode(3, "My rented car", printCustomerCar));
             customerMenuNode.addChild(new MenuNode(0, "Back"));
         }
         if (customerNames.size() > 0) {

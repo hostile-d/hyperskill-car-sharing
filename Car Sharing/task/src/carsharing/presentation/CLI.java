@@ -125,6 +125,21 @@ public class CLI {
         return null;
     }
 
+    public Callable printCustomerCar() {
+        var carDetails = dbManager.getCustomerCar(currentMenuNode.getName());
+        if (carDetails.isEmpty()) {
+            System.out.println("You didn't rent a car!");
+        } else {
+            var car = carDetails.get(0);
+            System.out.println("Your rented car:");
+            System.out.println(car.getName());
+            System.out.println("Company:");
+            System.out.println(car.getCompanyName());
+        }
+        System.out.println();
+        return null;
+    }
+
     private void createMenu() {
         var menuRoot = new Menu(
                 dbManager,
@@ -132,6 +147,7 @@ public class CLI {
                 this::printCompanyList,
                 this::printCarsList,
                 this::printCustomerList,
+                this::printCustomerCar,
                 this::addCompany,
                 this::addCarToCompany,
                 this::addCustomer

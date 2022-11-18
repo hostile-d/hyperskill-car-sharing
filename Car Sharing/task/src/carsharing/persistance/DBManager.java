@@ -1,5 +1,7 @@
 package carsharing.persistance;
 
+import carsharing.business.Car;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -141,6 +143,48 @@ public class DBManager {
             return null;
         });
         return customers;
+    }
+
+
+    public ArrayList<Car> getCustomerCar(String customerName) {
+        var result = new ArrayList<Car>();
+        exceptionHandler(() -> {
+            var carId = "";
+            var carName = "";
+            var companyId = "";
+            var companyName = "";
+            statement = connection.createStatement();
+
+            String customerQuery =  "SELECT * FROM customer WHERE name = '"+customerName+"'";
+            var customerResult = statement.executeQuery(customerQuery);
+            while(customerResult.next()) {
+                carId = customerResult.getString("rented_car_id");
+                if (carId == null) {
+                    return null;
+                }
+            }
+
+            String carQuery = "SELECT * FROM car WHERE id = " + carId;
+            var carResult = statement.executeQuery(carQuery);
+            while(carResult.next()) {
+                carName = carResult.getString("name");
+                companyId = carResult.getString("company_id");
+                if (companyId == null) {
+                    return null;
+                }
+            }
+
+            String companyQuery = "SELECT * FROM company WHERE id = " + companyId;
+            var companyResult = statement.executeQuery(companyQuery);
+            while(companyResult.next()) {
+                companyName = companyResult.getString("name");
+            }
+
+            result.add(new Car(carName, companyName));
+            statement.close();
+            return null;
+        });
+        return result;
     }
 
     public ArrayList<String> listCompanyCars(String companyName) {
