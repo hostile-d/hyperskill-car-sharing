@@ -140,6 +140,11 @@ public class CLI {
         return null;
     }
 
+    public Callable returnCar() {
+        dbManager.returnCar(currentMenuNode.getName());
+        return null;
+    }
+
     private void createMenu() {
         var menuRoot = new Menu(
                 dbManager,
@@ -150,7 +155,8 @@ public class CLI {
                 this::printCustomerCar,
                 this::addCompany,
                 this::addCarToCompany,
-                this::addCustomer
+                this::addCustomer,
+                this::returnCar
         );
         menu = menuRoot;
         currentMenuNode = menuRoot;

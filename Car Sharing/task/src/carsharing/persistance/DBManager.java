@@ -187,6 +187,15 @@ public class DBManager {
         return result;
     }
 
+    public void returnCar(String customerName) {
+        exceptionHandler(() -> {
+            statement = connection.createStatement();
+            String returnCar = "UPDATE customer SET rented_car_id = null WHERE name = " + customerName;
+            statement.executeUpdate(returnCar);
+            return null;
+        });
+    }
+
     public ArrayList<String> listCompanyCars(String companyName) {
         ArrayList<String> cars = new ArrayList<String>();
         exceptionHandler(() -> {
