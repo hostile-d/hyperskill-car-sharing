@@ -1,6 +1,7 @@
 package carsharing.persistance;
 
 import carsharing.business.Car;
+import carsharing.business.Company;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -16,36 +17,17 @@ public class DBManager {
     public DBManager (String dbFileName) {
         this.dbFileName = dbFileName;
     }
-    public void dropOldDB() {
-        exceptionHandler(() -> {
-            statement = connection.createStatement();
-            statement.execute("DROP TABLE IF EXISTS customer");
-            statement.close();
-
-            statement = connection.createStatement();
-            statement.execute("DROP TABLE IF EXISTS car");
-            statement.close();
-
-            statement = connection.createStatement();
-            statement.execute("DROP TABLE IF EXISTS company");
-            statement.close();
-
-
-            statement.close();
-            return null;
-        });
-    }
     public void createDB() {
         exceptionHandler(() -> {
             statement = connection.createStatement();
-            String createCompanyTable = "CREATE TABLE company (" +
+            String createCompanyTable = "CREATE TABLE IF NOT EXISTS company (" +
                     "id INTEGER NOT NULL AUTO_INCREMENT, " +
                     " name VARCHAR(255) NOT NULL UNIQUE, " +
                     " PRIMARY KEY (id)" +
                     ")";
             statement.executeUpdate(createCompanyTable);
 
-            String createCarTable = "CREATE TABLE car (" +
+            String createCarTable = "CREATE TABLE IF NOT EXISTS car (" +
                     " id INTEGER NOT NULL AUTO_INCREMENT, " +
                     " name VARCHAR NOT NULL UNIQUE, " +
                     " company_id INT NOT NULL, " +
@@ -55,7 +37,7 @@ public class DBManager {
                     ")";
             statement.executeUpdate(createCarTable);
 
-            String createCustomerTable = "CREATE TABLE customer (" +
+            String createCustomerTable = "CREATE TABLE IF NOT EXISTS customer (" +
                     " id INTEGER NOT NULL AUTO_INCREMENT, " +
                     " name VARCHAR(255) NOT NULL UNIQUE, " +
                     " rented_car_id INTEGER, " +
@@ -81,15 +63,17 @@ public class DBManager {
         });
     }
 
-    public ArrayList<String> listCompanies() {
-        ArrayList<String> companies = new ArrayList<String>();
+    public ArrayList<Company> listCompanies() {
+        ArrayList<Company> companies = new ArrayList<Company>();
         exceptionHandler(() -> {
             statement = connection.createStatement();
             String sql =  "SELECT * FROM company";
             var result = statement.executeQuery(sql);
 
             while(result.next()) {
-                companies.add(result.getString("name"));
+                var id = result.getInt("id");
+                var name = result.getString("name");
+                companies.add(new Company(id, name));
             }
 
             statement.close();
@@ -146,7 +130,7 @@ public class DBManager {
     }
 
 
-    public ArrayList<Car> getCustomerCar(String customerName) {
+    public Car getCustomerCar(String customerName) {
         var result = new ArrayList<Car>();
         exceptionHandler(() -> {
             var carId = "";
@@ -184,30 +168,34 @@ public class DBManager {
             statement.close();
             return null;
         });
-        return result;
+        if (!result.isEmpty()) {
+            return result.get(0);
+        }
+        return null;
     }
 
     public void returnCar(String customerName) {
         exceptionHandler(() -> {
             statement = connection.createStatement();
-            String returnCar = "UPDATE customer SET rented_car_id = null WHERE name = " + customerName;
+            String returnCar = "UPDATE customer SET rented_car_id = null WHERE name = '" + customerName + "'";
             statement.executeUpdate(returnCar);
             return null;
         });
     }
 
-    public ArrayList<String> listCompanyCars(String companyName) {
+    public void rentCar(Integer carId, String customerName) {
+        exceptionHandler(() -> {
+            statement = connection.createStatement();
+            String returnCar = "UPDATE customer SET rented_car_id = '"+carId+"' WHERE name = '" + customerName + "'";
+            statement.executeUpdate(returnCar);
+            return null;
+        });
+    }
+
+    public ArrayList<String> listCompanyCars(Integer companyId) {
         ArrayList<String> cars = new ArrayList<String>();
         exceptionHandler(() -> {
             ResultSet carsList = null;
-            statement = connection.createStatement();
-            String getId =  "SELECT id FROM company WHERE name='" + companyName + "'";
-            var idResult = statement.executeQuery(getId);
-            Integer companyId = null;
-            while (idResult.next()) {
-                companyId = idResult.getInt("id");
-            }
-            statement.close();
 
             if (companyId != null) {
                 statement = connection.createStatement();
@@ -224,6 +212,22 @@ public class DBManager {
         return cars;
     }
 
+    public Integer getCompanyIdByName(String companyName) {
+        var result = new ArrayList<Integer>();
+        exceptionHandler(() -> {
+            statement = connection.createStatement();
+            String getId =  "SELECT * FROM company WHERE name='" + companyName + "'";
+            var idResult = statement.executeQuery(getId);
+            if (idResult != null) {
+                if (idResult.next()) {
+                    result.add(idResult.getInt("id"));
+                }
+            }
+            return null;
+        });
+        return result.get(0);
+    }
+
     public void exceptionHandler(Callable<?> callback) {
         try {
             Class.forName(JDBC_DRIVER);
@@ -231,23 +235,22 @@ public class DBManager {
             connection.setAutoCommit(true);
             callback.call();
             connection.close();
-        } catch(SQLException se) {
-            //Handle errors for JDBC
+        } catch (Exception se) {
             se.printStackTrace();
-        } catch(Exception e) {
-            //Handle errors for Class.forName
-            e.printStackTrace();
         } finally {
-            //finally block used to close resources
-            try{
-                if(statement!=null) statement.close();
-            } catch(SQLException se2) {
-            } // nothing we can do
             try {
-                if(connection!=null) connection.close();
-            } catch(SQLException se){
+                if (statement!=null) {
+                    statement.close();
+                }
+            } catch (SQLException ignored) {
+            }
+            try {
+                if (connection!=null) {
+                    connection.close();
+                }
+            } catch (SQLException se){
                 se.printStackTrace();
-            } //end finally try
-        } //end try
+            }
+        }
     }
 }

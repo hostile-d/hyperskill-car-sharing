@@ -97,7 +97,7 @@ public class CLI {
     }
 
     public Callable printCarsList() {
-        var cars = dbManager.listCompanyCars(currentMenuNode.getName());
+        var cars = dbManager.listCompanyCars(dbManager.getCompanyIdByName(currentMenuNode.getName()));
         if (cars.isEmpty()) {
             System.out.println("The car list is empty!");
         } else {
@@ -126,11 +126,10 @@ public class CLI {
     }
 
     public Callable printCustomerCar() {
-        var carDetails = dbManager.getCustomerCar(currentMenuNode.getName());
-        if (carDetails.isEmpty()) {
+        var car = dbManager.getCustomerCar(currentMenuNode.getName());
+        if (car == null) {
             System.out.println("You didn't rent a car!");
         } else {
-            var car = carDetails.get(0);
             System.out.println("Your rented car:");
             System.out.println(car.getName());
             System.out.println("Company:");
@@ -141,7 +140,54 @@ public class CLI {
     }
 
     public Callable returnCar() {
+        var car = dbManager.getCustomerCar(currentMenuNode.getName());
+        if (car == null) {
+            System.out.println("You didn't rent a car!\n");
+            return null;
+        }
         dbManager.returnCar(currentMenuNode.getName());
+        System.out.println("You didn't rent a car!\n");
+        return null;
+    }
+
+    public Callable rentCar() {
+        var companies = dbManager.listCompanies();
+        var carDetails = dbManager.getCustomerCar(currentMenuNode.getName());
+        if (companies.isEmpty()) {
+            System.out.println("The company list is empty!\n");
+        } else if (carDetails != null) {
+            System.out.println("You've already rented a car!\n");
+        } else {
+            System.out.printf("Choose a company:\n");
+            for (int i = 0; i < companies.size(); i++) {
+                System.out.println((i + 1) + ". " + companies.get(i).getName());
+            }
+            System.out.println("0. Back");
+
+            var companyInput = scanner.nextLine();
+            var chosenCompanyId = Integer.parseInt(companyInput);
+            if (chosenCompanyId == 0) {
+                return null;
+            }
+            var cars = dbManager.listCompanyCars(chosenCompanyId);
+            if (cars.isEmpty()) {
+                System.out.printf("No available cars in the '%s' company\n", currentMenuNode.getName());
+                return null;
+            }
+            System.out.printf("Choose a car:\n");
+            for (int i = 0; i < cars.size(); i++) {
+                System.out.println((i + 1) + ". " + cars.get(i));
+            }
+            var carInput = scanner.nextLine();
+            Integer carId = 0;
+            try {
+                carId = Integer.parseInt(carInput);
+            } catch (NumberFormatException e) {
+                System.out.printf("Incorrect input, type a number");
+            }
+            dbManager.rentCar(carId, currentMenuNode.getName());
+            System.out.printf("You rented '"+cars.get(carId - 1)+"'\n");
+        }
         return null;
     }
 
@@ -156,7 +202,8 @@ public class CLI {
                 this::addCompany,
                 this::addCarToCompany,
                 this::addCustomer,
-                this::returnCar
+                this::returnCar,
+                this::rentCar
         );
         menu = menuRoot;
         currentMenuNode = menuRoot;

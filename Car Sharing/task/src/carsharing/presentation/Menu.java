@@ -18,7 +18,8 @@ public class Menu extends MenuNode {
             Callable addCompany,
             Callable addCarToCompany,
             Callable addCustomer,
-            Callable returnCar
+            Callable returnCar,
+            Callable rentCar
     ) {
         this.addChild(new MenuNode(1, "Log in as a manager"));
         this.addChild(new MenuNode(2, "Log in as a customer", printCustomerList));
@@ -32,7 +33,7 @@ public class Menu extends MenuNode {
         var companyNames = dbManager.listCompanies();
         var companyParentNode = this.getChildren().get(1);
         for (int i = 0; i < companyNames.size(); i++) {
-            var companyName = companyNames.get(i);
+            var companyName = companyNames.get(i).getName();
             var companyMenuNode = new MenuNode(i + 1, companyName, () -> {
                 printCompanyMenu.accept(companyName);
                 return null;
@@ -52,7 +53,7 @@ public class Menu extends MenuNode {
             var customerName = customerNames.get(i);
             var customerMenuNode = new MenuNode(i + 1, customerName);
             customerParentNode.addChild(customerMenuNode, this);
-            customerMenuNode.addChild(new MenuNode(1, "Rent a car"));
+            customerMenuNode.addChild(new MenuNode(1, "Rent a car", rentCar));
             customerMenuNode.addChild(new MenuNode(2, "Return a rented car", returnCar));
             customerMenuNode.addChild(new MenuNode(3, "My rented car", printCustomerCar));
             customerMenuNode.addChild(new MenuNode(0, "Back"));
